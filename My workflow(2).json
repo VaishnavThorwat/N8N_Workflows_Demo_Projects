@@ -1,0 +1,460 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyWeek",
+              "hour": 9
+            }
+          ]
+        }
+      },
+      "id": "9a21f856-33b1-421a-87fa-9b79acd5df12",
+      "name": "Cron Trigger",
+      "type": "n8n-nodes-base.cron",
+      "position": [
+        -1296,
+        240
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C09BZ4HA97G",
+          "mode": "list",
+          "cachedResultName": "onboarding-analysis"
+        },
+        "text": "={{ $json.blocks[0].text.text }}\n{{ $json.blocks[1].text.text }}",
+        "otherOptions": {}
+      },
+      "id": "fa74ae69-855a-4e76-869b-75c7c3c0c14e",
+      "name": "Send Slack Report",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        272,
+        256
+      ],
+      "typeVersion": 2.3,
+      "webhookId": "37ec09f1-d726-4fdf-bdee-18d9f12da8fd",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "C8igZvwsZa9A1rzz",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1Lq7NMWyJoRlY8WJa_PJSqxiEFigKOjcRnz8TW-4YHQY",
+          "mode": "list",
+          "cachedResultName": "MOCK_DATA(2).csv",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Lq7NMWyJoRlY8WJa_PJSqxiEFigKOjcRnz8TW-4YHQY/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 314279932,
+          "mode": "list",
+          "cachedResultName": "MOCK_DATA(2).csv",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Lq7NMWyJoRlY8WJa_PJSqxiEFigKOjcRnz8TW-4YHQY/edit#gid=314279932"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -1040,
+        240
+      ],
+      "id": "50add47d-898d-490d-b3b3-5bbed472520f",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "aOneW8lxWc5JIQYP",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "1ec7d67f-1793-45f4-ad18-387c3aaf8109",
+              "leftValue": "={{ $json.drop_off }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -832,
+        240
+      ],
+      "id": "771f95c9-0792-4be0-b5fd-650d367cbea3",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.0-flash-lite",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.0-flash-lite"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=\"You are an onboarding drop-off analyzer assistant for growth teams. You look at structured funnel analytics and suggest actionable UX improvements.\"\nprovide in plain text\n\n\n\n",
+              "role": "model"
+            },
+            {
+              "content": "=Here is the onboarding drop-off data:\n{{ $json.dropoffData }}\nTask: Identify the biggest friction points in onboarding. \nCluster potential reasons behind them, and recommend 2-3 actionable UX fixes.\n"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        -592,
+        256
+      ],
+      "id": "e8c92243-a311-4fc2-beb7-8dab5414a658",
+      "name": "Message a model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "w8dOCAJSsoYDO7Jx",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        -576,
+        512
+      ],
+      "id": "21fb9b53-0faa-46eb-8a5d-b27ac131a16d",
+      "name": "No Operation, do nothing"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Input: items[0].json = your aggregated result\n// Output: enriched summary object with insights for dashboard\n\nconst data = items[0].json;\n\nfunction getTopKey(obj) {\n  return Object.entries(obj).reduce((a, b) => a[1] > b[1] ? a : b)[0];\n}\n\nfunction getRate(numerator, denominator) {\n  return ((numerator / denominator) * 100).toFixed(1) + \"%\";\n}\n\n// Extract data\nconst stepDropoffs = data.stepDropoffs || {};\nconst deviceDropoffs = data.deviceDropoffs || {};\nconst errorClusters = data.errorClusters || {};\nconst sessionDurationClusters = data.sessionDurationClusters || {};\n\n// Total dropoffs\nconst totalDropoffs = Object.values(stepDropoffs).reduce((a,b) => a+b, 0);\n\n// Step % drop-off\nconst stepDropoffPercent = {};\nfor (let step in stepDropoffs) {\n  stepDropoffPercent[step] = getRate(stepDropoffs[step], totalDropoffs);\n}\n\n// Cumulative drop-offs\nconst cumulativeDropoffs = {};\nlet runningTotal = 0;\nfor (let step of Object.keys(stepDropoffs).sort((a,b)=>a-b)) {\n  runningTotal += stepDropoffs[step];\n  cumulativeDropoffs[step] = getRate(runningTotal, totalDropoffs);\n}\n\n// Step + device breakdown placeholder (requires raw user data if available)\nconst stepDeviceBreakdown = {}; // Example: {\"1\": {\"mobile\": 30, \"desktop\": 20, ...}}\n\n// Step + error correlation placeholder (requires raw user data if available)\nconst stepErrorCorrelation = {}; // Example: {\"1\": {\"connection_error\": 5, \"form_validation_error\": 2, ...}}\n\n// Average session duration estimate (weighted midpoint per cluster)\nconst sessionDurations = {\"0-10s\":5, \"11-30s\":20, \"31-60s\":45, \"60s+\":75};\nlet totalDuration = 0, totalSessions = 0;\nfor (let key in sessionDurationClusters) {\n  const count = sessionDurationClusters[key];\n  totalDuration += (sessionDurations[key] || 0) * count;\n  totalSessions += count;\n}\nconst avgSessionDuration = (totalDuration / (totalSessions || 1)).toFixed(1); // in seconds\n\n// Identify top items\nconst topStep = getTopKey(stepDropoffs);\nconst worstDevice = getTopKey(deviceDropoffs);\nconst topError = getTopKey(errorClusters);\n\n// Early quit rate = (11–30s + 31–60s) / total\nconst earlyQuit = (sessionDurationClusters[\"11-30s\"] || 0) + (sessionDurationClusters[\"31-60s\"] || 0);\nconst earlyQuitRate = getRate(earlyQuit, totalSessions);\n\n// Prepare final enriched JSON\nconst enrichedJSON = {\n  summary: {\n    topStep: `Step ${topStep}`,\n    worstDevice,\n    topError,\n    earlyQuitRate,\n    totalDropoffs,\n    avgSessionDuration: avgSessionDuration + \"s\"\n  },\n  details: {\n    stepDropoffs,\n    stepDropoffPercent,\n    cumulativeDropoffs,\n    deviceDropoffs,\n    errorClusters,\n    sessionDurationClusters,\n    stepDeviceBreakdown,\n    stepErrorCorrelation\n  }\n};\n\n// Return as pretty JSON string in dropoffData\n// Return enriched JSON as an object instead of string\nreturn [\n  {\n    json: {\n      dropoffData: JSON.stringify($json, null, 2) // pretty JSON string\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -416,
+        -32
+      ],
+      "id": "cf10e998-c212-46bd-941f-129d0628f92f",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => ({\n  json: {\n    onboarding_analysis: item.json.content.parts[0].text\n  }\n}));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -208,
+        256
+      ],
+      "id": "ad733007-3615-4e7f-8082-1edb84bc1f68",
+      "name": "Code4"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "13rfTTbBXu7izUDX0wxcvpMEV-h-VDuAAEcOMsFX7mxk",
+          "mode": "list",
+          "cachedResultName": "DropOff_Data",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/13rfTTbBXu7izUDX0wxcvpMEV-h-VDuAAEcOMsFX7mxk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/13rfTTbBXu7izUDX0wxcvpMEV-h-VDuAAEcOMsFX7mxk/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Onboarding Analysis": "={{ $json.onboarding_analysis }}"
+          },
+          "matchingColumns": [
+            "Onboarding Analysis"
+          ],
+          "schema": [
+            {
+              "id": "Onboarding Analysis",
+              "displayName": "Onboarding Analysis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -48,
+        256
+      ],
+      "id": "e52ff417-6be1-4259-a813-c8e269e0536f",
+      "name": "Append or update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "aOneW8lxWc5JIQYP",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Scedule will trigger at 9AM every Monday\nGet data from Posthog/Sheet(Mock data) and separate dropoff events",
+        "height": 256,
+        "width": 688,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1392,
+        160
+      ],
+      "typeVersion": 1,
+      "id": "bb0b8328-2cf9-447a-9c16-5caf3dc6b5fd",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Process the data and Aggregate",
+        "height": 224,
+        "width": 480,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -688,
+        -96
+      ],
+      "typeVersion": 1,
+      "id": "3ba01e23-4f2c-41dc-828f-14b4a86c0d69",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const stepCounts = {};\nconst deviceCounts = {};\nconst errorClusters = {};\nconst durationBuckets = { \"0-10s\": 0, \"11-30s\": 0, \"31-60s\": 0, \"60s+\": 0 };\n\nfor (const item of items) {\n  const { step_completed, device, error_event, session_duration } = item.json;\n\n  // steps\n  stepCounts[step_completed] = (stepCounts[step_completed] || 0) + 1;\n\n  // devices\n  deviceCounts[device] = (deviceCounts[device] || 0) + 1;\n\n  // error messages\n  if (error_event) {\n    errorClusters[error_event] = (errorClusters[error_event] || 0) + 1;\n  }\n\n  // session duration bucket\n  if (session_duration <= 10) durationBuckets[\"0-10s\"]++;\n  else if (session_duration <= 30) durationBuckets[\"11-30s\"]++;\n  else if (session_duration <= 60) durationBuckets[\"31-60s\"]++;\n  else durationBuckets[\"60s+\"]++;\n}\n\nreturn [{\n  json: {\n    stepDropoffs: stepCounts,\n    deviceDropoffs: deviceCounts,\n    errorClusters,\n    sessionDurationClusters: durationBuckets\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -592,
+        -32
+      ],
+      "id": "4e3b58ca-f00e-4f4a-b3f6-ca6bfd525875",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "content": "## Recommend The changes & DropOff Analysis",
+        "height": 240,
+        "width": 384,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -672,
+        160
+      ],
+      "typeVersion": 1,
+      "id": "7426151c-3242-41d7-9d2f-65be0cd324b2",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## Process The text, Store in Excel & Send Report to Slack",
+        "height": 272,
+        "width": 736
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -256,
+        160
+      ],
+      "typeVersion": 1,
+      "id": "54a2ccaa-54e5-4940-81e9-6e087a1a0c23",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get input text\nlet analysis = $json[\"Onboarding Analysis\"];\n\n// Replace **bold** with *bold* for Slack\nanalysis = analysis.replace(/\\*\\*(.*?)\\*\\*/g, '*$1*');\n\n// Return Slack-friendly message\nreturn {\n  blocks: [\n    {\n      type: \"header\",\n      text: {\n        type: \"plain_text\",\n        text: \"📊 Onboarding Drop-off Analysis\"\n      }\n    },\n    {\n      type: \"section\",\n      text: {\n        type: \"mrkdwn\",\n        text: analysis\n      }\n    }\n  ],\n  text: analysis  // fallback plain text\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        112,
+        256
+      ],
+      "id": "b5d33898-9870-46ed-b1ff-072fd1432035",
+      "name": "Code2"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Cron Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Code4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code4": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append or update row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Code2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code2": {
+      "main": [
+        [
+          {
+            "node": "Send Slack Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "25248231-dfe4-4480-af5e-90c43fa2d72f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7edd482e80b5cb0a70dc3cb278b813193b824f48ae60d9873ac87115198891a8"
+  },
+  "id": "Z55nrNFrou1cgpiU",
+  "tags": []
+}
